@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>六爻AI断卦</title>
+<meta name="theme-color" content="#d4a030">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #0d1b2a 100%);
+  min-height: 100vh; color: #e0e0e0; padding: 8px;
+  overflow-x: hidden;
+}
+header { text-align: center; padding: 12px 0; margin-bottom: 8px; }
+h1 { font-size: 1.3rem; color: #d4a030; margin-bottom: 4px; }
+h2 { font-size: 0.85rem; color: #d4a030; margin-bottom: 8px; }
+.card { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(212,160,48,0.15); }
+.input-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; align-items: center; }
+.input-row label { font-size: 0.75rem; color: #aaa; white-space: nowrap; }
+select, input[type="text"] { padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(212,160,48,0.3); background: rgba(0,0,0,0.4); color: #e0e0e0; font-size: 0.8rem; min-width: 65px; }
+select:focus, input:focus { outline: none; border-color: #d4a030; }
+.btn { padding: 8px 15px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; }
+.btn-primary { background: linear-gradient(135deg, #d4a030, #f39c12); color: #000; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,160,48,0.4); }
+.btn-secondary { background: rgba(212,160,48,0.15); border: 1px solid #d4a030; color: #d4a030; }
+.gua-grid { display: grid; grid-template-columns: 50px 1fr 1fr 1fr 45px 1fr; gap: 4px; align-items: center; margin-bottom: 4px; }
+.gua-grid .hdr { font-size: 0.65rem; color: #888; text-align: center; padding: 2px; }
+.gua-grid select { width: 100%; min-width: unset; padding: 4px 2px; font-size: 0.7rem; }
+.gua-grid .row-label { font-size: 0.7rem; color: #aaa; text-align: center; }
+.score-badge { font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; font-weight: bold; }
+.score-high { background: rgba(39,174,96,0.3); color: #2ecc71; }
+.score-mid { background: rgba(241,196,15,0.3); color: #f1c40f; }
+.score-low { background: rgba(231,76,60,0.3); color: #e74c3c; }
+.prompt-content { background: #0a0e14; border: 1px solid #1e2a3a; border-radius: 8px; padding: 12px; font-size: 0.75rem; white-space: pre-wrap; max-height: 500px; overflow-y: auto; line-height: 1.6; }
+.hidden { display: none !important; }
+.tag { display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 0.65rem; margin: 1px; }
+.tag-yuepo { background: rgba(231,76,60,0.3); color: #e74c3c; }
+.tag-andong { background: rgba(155,89,182,0.3); color: #9b59b6; }
+.tag-rippo { background: rgba(230,126,34,0.3); color: #e67e22; }
+.tag-jintui { background: rgba(52,152,219,0.3); color: #3498db; }
+.tag-fanfu { background: rgba(231,76,60,0.3); color: #e74c3c; }
+.tag-huawang { background: rgba(46,204,113,0.3); color: #2ecc71; }
+.tag-xunkong { background: rgba(149,165,166,0.3); color: #95a5a6; }
+.tag-sanhe { background: rgba(241,196,15,0.3); color: #f1c40f; }
+.tag-sheng { background: rgba(39,174,96,0.3); color: #2ecc71; }
+.tag-ke { background: rgba(231,76,60,0.3); color: #e74c3c; }
+.tag-hechong { background: rgba(52,152,219,0.3); color: #3498db; }
+.score-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+.score-table th { background: rgba(212,160,48,0.2); color: #d4a030; padding: 4px; text-align: center; border: 1px solid rgba(212,160,48,0.2); }
+.score-table td { padding: 3px 5px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+.fushen-card { background: rgba(155,89,182,0.1); border: 1px solid rgba(155,89,182,0.3); }
+.fushen-row { display: grid; grid-template-columns: 50px 1fr 1fr 1fr; gap: 4px; align-items: center; margin-bottom: 3px; }
+.fushen-row select { width: 100%; min-width: unset; padding: 4px 2px; font-size: 0.7rem; border-radius: 4px; border: 1px solid rgba(155,89,182,0.4); background: rgba(0,0,0,0.4); color: #e0e0e0; }
+.fushen-row .hdr { font-size: 0.6rem; color: #9b59b6; text-align: center; }
+.fushen-row .row-label { font-size: 0.65rem; color: #9b59b6; text-align: center; }
+.tag-fushen { background: rgba(155,89,182,0.3); color: #9b59b6; }
+.score-total { font-size: 0.9rem; padding: 8px; text-align: center; border-radius: 6px; margin-top: 6px; }
+.score-total.good { background: rgba(39,174,96,0.2); color: #2ecc71; border: 1px solid rgba(39,174,96,0.3); }
+.score-total.mid { background: rgba(241,196,15,0.2); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3); }
+.score-total.bad { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+.tabs { display: flex; gap: 3px; margin-bottom: 8px; flex-wrap: wrap; }
+.tab-btn { flex: 1; min-width: 55px; padding: 6px 3px; background: rgba(255,255,255,0.05); border: 1px solid rgba(212,160,48,0.2); border-radius: 6px; cursor: pointer; font-size: 0.7rem; color: #888; text-align: center; transition: all 0.2s; }
+.tab-btn.active { background: rgba(212,160,48,0.2); border-color: #d4a030; color: #d4a030; }
+.ref-section { margin-bottom: 10px; }
+.ref-title { font-size: 0.75rem; color: #d4a030; margin-bottom: 5px; font-weight: 600; }
+.ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.ref-item { background: rgba(0,0,0,0.3); border-radius: 5px; padding: 5px 6px; font-size: 0.65rem; line-height: 1.4; }
+.ref-item b { color: #f39c12; }
+.mobile-hint { font-size: 0.7rem; color: #888; text-align: center; margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>☯ 六爻AI断卦手机版</h1>
+    <p style="color:#666;font-size:0.7rem;">青岚六爻理论完整版 · 适合手机使用</p>
+    <div class="mobile-hint">可添加到手机桌面，像原生APP一样使用</div>
+  </header>
+
+  <div class="card">
+    <h2>📋 基础信息</h2>
+    <div class="input-row">
+      <label>月建：</label>
+      <select id="yuejian"><option value="">请选择</option><option value="子">子月</option><option value="丑">丑月</option><option value="寅">寅月</option><option value="卯">卯月</option><option value="辰">辰月</option><option value="巳">巳月</option><option value="午">午月</option><option value="未">未月</option><option value="申">申月</option><option value="酉">酉月</option><option value="戌">戌月</option><option value="亥">亥月</option></select>
+      <label>日辰：</label>
+      <select id="richen"><option value="">请选择</option><option value="子">子日</option><option value="丑">丑日</option><option value="寅">寅日</option><option value="卯">卯日</option><option value="辰">辰日</option><option value="巳">巳日</option><option value="午">午日</option><option value="未">未日</option><option value="申">申日</option><option value="酉">酉日</option><option value="戌">戌日</option><option value="亥">亥日</option></select>
+      <label>世爻：</label>
+      <select id="shiYao"><option value="1">初爻</option><option value="2">二爻</option><option value="3" selected>三爻</option><option value="4">四爻</option><option value="5">五爻</option><option value="6">上爻</option></select>
+      <label>应爻：</label>
+      <select id="yingYao"><option value="1">初爻</option><option value="2">二爻</option><option value="3">三爻</option><option value="4" selected>四爻</option><option value="5">五爻</option><option value="6">上爻</option></select>
+    </div>
+    <div class="input-row">
+      <label>问事：</label>
+      <select id="wenType" style="min-width:100px;">
+        <option value="">一般占问</option><option value="求财">求财/财运</option><option value="婚姻">婚姻/感情</option>
+        <option value="事业">事业/官运</option><option value="学业">学业/考试</option><option value="子女">子女/生育</option>
+        <option value="健康">健康/疾病</option><option value="出行">出行/旅游</option><option value="官司">官司/诉讼</option>
+        <option value="合作">合作/生意</option><option value="投资">投资/股票</option><option value="寻人">寻人/失物</option>
+        <option value="求职">求职/升职</option><option value="房产">房产/置业</option><option value="家宅">家宅/风水</option>
+      </select>
+      <input type="text" id="question" placeholder="具体问题描述..." style="flex:1;min-width:150px;">
+    </div>
+    <div class="input-row">
+      <label>旬空：</label>
+      <div style="display:flex;gap:3px;flex-wrap:wrap;">
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk0" value="子">子</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk1" value="丑">丑</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk2" value="寅">寅</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk3" value="卯">卯</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk4" value="辰">辰</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk5" value="巳">巳</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk6" value="午">午</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk7" value="未">未</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk8" value="申">申</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk9" value="酉">酉</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk10" value="戌">戌</label>
+        <label style="font-size:0.65rem;color:#666;"><input type="checkbox" id="xk11" value="亥">亥</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔮 六爻排盘</h2>
+    <div class="gua-grid" style="margin-bottom:6px;">
+      <div class="hdr">爻位</div><div class="hdr">地支</div><div class="hdr">六亲</div><div class="hdr">六神</div><div class="hdr">动</div><div class="hdr">变爻</div>
+    </div>
+    <div id="yaoRows"></div>
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:2;" onclick="analyzeAll()">🔍 开始分析</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <!-- 伏神输入 -->
+  <div class="card fushen-card" id="fushenCard">
+    <h2 style="color:#9b59b6;">👻 伏神输入（可选）</h2>
+    <p style="font-size:0.65rem;color:#888;margin-bottom:6px;">本卦缺少的六亲，从伏卦（变卦）中寻找。飞神为本爻，伏神藏于飞神之下。</p>
+    <div class="fushen-row" style="margin-bottom:4px;">
+      <div class="hdr">爻位</div><div class="hdr">伏神六亲</div><div class="hdr">伏神地支</div><div class="hdr">飞神</div>
+    </div>
+    <div id="fushenRows"></div>
+    <div style="font-size:0.6rem;color:#666;margin-top:6px;">
+      <b>伏神规则：</b>伏神力量较弱，需飞神生扶。飞神克伏神→伏神难出。飞神生伏神→伏神易出。
+    </div>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <h2>📊 分析结果</h2>
+    <div id="scoreTable"></div>
+    <div id="scoreSummary"></div>
+    <div id="specialTags" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card hidden" id="promptCard">
+    <h2>🤖 AI分析Prompt</h2>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="copyPrompt()">📋 复制</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('promptCard').classList.add('hidden')">收起</button>
+    </div>
+    <div class="prompt-content" id="promptContent"></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab-btn active" onclick="switchTab('yongshen')">用神</div>
+      <div class="tab-btn" onclick="switchTab('liushen')">六神</div>
+      <div class="tab-btn" onclick="switchTab('liuqin')">六亲</div>
+      <div class="tab-btn" onclick="switchTab('dongbian')">动变</div>
+      <div class="tab-btn" onclick="switchTab('fushen')">伏神</div>
+      <div class="tab-btn" onclick="switchTab('score')">评分</div>
+    </div>
+    <div id="tab-yongshen">
+      <div class="ref-section">
+        <div class="ref-title">🎯 取用神规则</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.7;">
+          <b style="color:#e74c3c;">求财</b>：妻财为用神<br><b style="color:#f39c12;">婚姻（男）</b>：妻财为用神<br>
+          <b style="color:#f39c12;">婚姻（女）</b>：官鬼为用神<br><b style="color:#3498db;">事业/官运</b>：官鬼为用神<br>
+          <b style="color:#9b59b6;">学业/考试</b>：父母为用神<br><b style="color:#2ecc71;">子女</b>：子孙为用神<br>
+          <b style="color:#e74c3c;">健康/疾病</b>：子孙为用神<br><b style="color:#3498db;">官司/诉讼</b>：官鬼为用神<br>
+          <b style="color:#f39c12;">合作/生意</b>：妻财为用神<br><b style="color:#2ecc71;">出行</b>：世爻为用神<br>
+          <b style="color:#9b59b6;">寻人/失物</b>：妻财/子孙<br><b style="color:#e74c3c;">房产</b>：父母为用神
+        </div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">📌 用神两现取法</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.7;">
+          ① 优先取<b style="color:#2ecc71;">世爻上的用神</b><br>② 其次取<b style="color:#3498db;">发动的用神</b><br>
+          ③ 再取<b style="color:#9b59b6;">临近日建日辰的用神</b><br>④ 最后取<b style="color:#f39c12;">旬空月破的用神</b>
+        </div>
+      </div>
+    </div>
+    <div id="tab-liushen" class="hidden">
+      <div class="ref-section">
+        <div class="ref-title">🐉 六神顺序（初→上）</div>
+        <div style="font-size:0.65rem;color:#888;margin-bottom:6px;">初爻=玄武 二爻=白虎 三爻=螣蛇 四爻=勾陈 五爻=朱雀 上爻=青龙</div>
+        <div class="ref-grid">
+          <div class="ref-item"><b style="color:#2ecc71;">☳ 青龙（木）</b><br>吉：正义/喜庆/婚姻/福禄<br>凶：嗜酒/好色/孤僻</div>
+          <div class="ref-item"><b style="color:#e74c3c;">☲ 朱雀（火）</b><br>吉：文书/口才/信息<br>凶：口舌/官司/火灾</div>
+          <div class="ref-item"><b style="color:#f39c12;">☷ 勾陈（土）</b><br>吉：诚实/稳重/房产<br>凶：迟缓/肿瘤/牢狱</div>
+          <div class="ref-item"><b style="color:#9b59b6;">🐍 螣蛇（土）</b><br>吉：灵活/思维/技艺<br>凶：惊吓/噩梦/阴灵</div>
+          <div class="ref-item"><b style="color:#3498db;">☰ 白虎（金）</b><br>吉：威猛/果断/军人<br>凶：血光/疾病/丧事</div>
+          <div class="ref-item"><b style="color:#95a5a6;">☵ 玄武（水）</b><br>吉：聪明/智慧/城府<br>凶：盗贼/欺骗/淫乱</div>
+        </div>
+      </div>
+    </div>
+    <div id="tab-liuqin" class="hidden">
+      <div class="ref-section">
+        <div class="ref-title">👨‍👩‍👧 六亲类象</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.6;">
+          <div><b style="color:#e74c3c;">父母</b>：父母长辈/房屋座驾/文书证件/衣物</div>
+          <div><b style="color:#3498db;">兄弟</b>：兄弟姐妹/合作伙伴/破财花费/竞争</div>
+          <div><b style="color:#2ecc71;">子孙</b>：子女晚辈/医生医药/喜悦福神/宠物</div>
+          <div><b style="color:#9b59b6;">妻财</b>：妻子情人/钱财产物/仆从下人/食物</div>
+          <div><b style="color:#f39c12;">官鬼</b>：丈夫官职/功名事业/疾病灾祸/鬼神</div>
+        </div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">🌿 长生十二宫</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.6;">
+          <b style="color:#2ecc71;">旺相</b>：长生/冠带/临官/帝旺<br>
+          <b style="color:#f39c12;">渐弱</b>：沐浴/衰/病 &nbsp; <b style="color:#e74c3c;">最弱</b>：死/墓/绝<br>
+          木：亥(长生)卯(帝旺) 火：寅(长生)午(帝旺)<br>
+          金：巳(长生)酉(帝旺) 水：申(长生)子(帝旺)
+        </div>
+      </div>
+    </div>
+    <div id="tab-dongbian" class="hidden">
+      <div class="ref-section">
+        <div class="ref-title">⚡ 动变规则</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.7;">
+          <b style="color:#2ecc71;">回头生</b>：变爻生动爻 → 大吉，有根有源<br>
+          <b style="color:#e74c3c;">回头克</b>：变爻克动爻 → 大凶，事态逆转<br>
+          <b style="color:#3498db;">回头合</b>：动变相合 → 合绊、阻碍<br>
+          <b style="color:#9b59b6;">进神</b>：寅→卯/申→酉 → 前进发展<br>
+          <b style="color:#f39c12;">退神</b>：卯→寅/酉→申 → 后退衰落<br>
+          <b style="color:#e74c3c;">反吟</b>：动变相冲 → 反复不稳<br>
+          <b style="color:#e74c3c;">伏吟</b>：动变相同 → 痛苦停滞<br>
+          <b style="color:#2ecc71;">化旺</b>：变爻被日月生 → 力量增强<br>
+          <b style="color:#2ecc71;">超级化旺</b>：变爻临月建日辰 → 最强
+        </div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">🌀 三合六合六冲</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.6;">
+          <b>木局</b>：亥卯未 <b>火局</b>：寅午戌<br>
+          <b>金局</b>：巳酉丑 <b>水局</b>：申子辰<br>
+          <b>六合</b>：子丑/寅亥/卯戌/辰酉/巳申/午未<br>
+          <b>六冲</b>：子午/丑未/寅申/卯酉/辰戌/巳亥
+        </div>
+      </div>
+    </div>
+    <div id="tab-fushen" class="hidden">
+      <div class="ref-section">
+        <div class="ref-title">👻 伏神规则</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.7;">
+          <b style="color:#9b59b6;">伏神</b>：本卦缺少的六亲，从伏卦（变卦）中寻找<br>
+          <b style="color:#f39c12;">飞神</b>：伏神所在爻位的地支（本爻）<br>
+          <b style="color:#2ecc71;">飞生伏</b>：飞神生伏神 → 伏神易出，有力<br>
+          <b style="color:#e74c3c;">飞克伏</b>：飞神克伏神 → 伏神难出，无力<br>
+          <b style="color:#3498db;">伏克飞</b>：伏神克飞神 → 伏神可出<br>
+          <b style="color:#9b59b6;">伏生飞</b>：伏神生飞神 → 泄气，无力<br>
+          <b style="color:#e74c3c;">飞空</b>：飞神旬空 → 伏神易出<br>
+          <b style="color:#e74c3c;">飞破</b>：飞神月破 → 伏神易出
+        </div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">📌 伏神用法</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.6;">
+          1. 本卦无某六亲 → 查伏卦对应爻位<br>
+          2. 伏神为用神时 → 需看飞神生克<br>
+          3. 伏神出伏条件：<br>
+          &nbsp;&nbsp;• 飞神旬空/月破<br>
+          &nbsp;&nbsp;• 日月冲飞神<br>
+          &nbsp;&nbsp;• 伏神临日月<br>
+          4. 伏神评分：通常<b style="color:#e74c3c;">-5~-10</b>（力量较弱）
+        </div>
+      </div>
+    </div>
+    <div id="tab-score" class="hidden">
+      <div class="ref-section">
+        <div class="ref-title">📊 评分规则</div>
+        <div style="font-size:0.65rem;color:#888;line-height:1.7;">
+          <span class="tag tag-yuepo">月破</span>-20 <span class="tag tag-rippo">日破</span>-25 <span class="tag tag-xunkong">旬空</span>-10<br>
+          <span class="tag tag-fanfu">反吟</span>-15 <span class="tag tag-fanfu">伏吟</span>-10 <span class="tag tag-jintui">退神</span>-5<br>
+          <span class="tag tag-ke">月克/日克</span>-8 <span class="tag tag-ke">回头克</span>-20<br>
+          <span class="tag tag-andong">暗动</span>+15/10 <span class="tag tag-jintui">进神</span>+10<br>
+          <span class="tag tag-sheng">月生/日生</span>+10 <span class="tag tag-sheng">旺相</span>+20<br>
+          <span class="tag tag-huawang">化旺</span>+15 <span class="tag tag-huawang">超级化旺</span>+30<br>
+          <span class="tag tag-sanhe">三合局</span>+15 <span class="tag tag-sheng">回头生</span>+20
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="generatePrompt()">🤖 生成AI分析Prompt</button>
+
+  <div class="card" style="margin-top:10px;">
+    <div class="ref-title">📱 安装到手机</div>
+    <div style="font-size:0.7rem;color:#888;">
+      <b>iPhone</b>：Safari → 分享 → 添加到主屏幕<br>
+      <b>Android</b>：Chrome → 菜单 → 添加到主屏幕
+    </div>
+  </div>
+</div>
+
+<script>
+const DIZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const LIUQIN = ['父母','兄弟','子孙','妻财','官鬼'];
+const LIUSHEN = ['玄武','白虎','螣蛇','勾陈','朱雀','青龙'];
+const posNames = ['初爻','二爻','三爻','四爻','五爻','上爻'];
+const DIZHI_WX = {子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+const WX_SHENG = {木:'火',火:'土',土:'金',金:'水',水:'木'};
+const WX_KE = {木:'土',土:'水',水:'火',火:'金',金:'木'};
+const CHONG = {子:'午',午:'子',丑:'未',未:'丑',寅:'申',申:'寅',卯:'酉',酉:'卯',辰:'戌',戌:'辰',巳:'亥',亥:'巳'};
+const HE = {子:'丑',丑:'子',寅:'亥',亥:'寅',卯:'戌',戌:'卯',辰:'酉',酉:'辰',巳:'申',申:'巳',午:'未',未:'午'};
+const JINSHEN = {寅:'卯',申:'酉',丑:'辰',未:'戌'};
+const TUISHEN = {卯:'寅',酉:'申',辰:'丑',戌:'未'};
+const SANHE_GROUPS = [['亥','卯','未'],['寅','午','戌'],['巳','酉','丑'],['申','子','辰']];
+
+// 地支象意
+const DIZHI_XIANG = {
+  子:'盗贼/智慧/河流/厕所/鼠',丑:'牛/仓库/牢狱/贤内助/桥梁',
+  寅:'老虎/树木/官员/丈夫/公公',卯:'兔/花草/盗贼/文书/手足',
+  辰:'龙/寺庙/水库/坟墓/医生',巳:'蛇/店铺/红色/道路/炉灶',
+  午:'马/兵马/光天化日/发热/冶炼',未:'羊/花园/酒食/宴会/孝服',
+  申:'猴/刀剑/军队/道路/医生',酉:'鸡/金属/首饰/少女/酒',
+  戌:'狗/坟墓/寺庙/岗哨/忠实',亥:'猪/厕所/智慧/玄学/盗贼'
+};
+
+// 六神象意
+const LIUSHEN_XIANG = {
+  青龙:{ji:'正义/忠诚/喜庆/福禄/饮食/帅气',xiong:'嗜酒/好色/清高/孤僻'},
+  朱雀:{ji:'文书/口才/信息/甜言蜜语',xiong:'口舌/官司/火灾/发炎'},
+  勾陈:{ji:'诚实/稳重/田土/房产/熟人',xiong:'愚笨/迟缓/肿瘤/牢狱'},
+  螣蛇:{ji:'灵活/思维/技艺/艺术',xiong:'惊吓/怪异/噩梦/阴灵'},
+  白虎:{ji:'威猛/果断/魄力/军人',xiong:'血光/疾病/死亡/丧事'},
+  玄武:{ji:'聪明/智慧/城府/内向',xiong:'盗贼/淫乱/赌博/欺骗'}
+};
+
+// 六亲象意
+const LIUQIN_XIANG = {
+  父母:{ren:'父母/祖父母/长辈/老师/上司/房东',wu:'房屋/车辆/文书/合同/证件/衣物',ti:'头部/皮肤/肺部'},
+  兄弟:{ren:'兄弟姐妹/同事/朋友/竞争者/合伙人',wu:'花费/损失/破财/争夺/阻碍',ti:'手足/筋骨/肝胆'},
+  子孙:{ren:'子女/晚辈/学生/医生/僧道/宠物',wu:'喜悦/平安/医药/福气/享乐',ti:'腹部/肠胃/生殖系统'},
+  妻财:{ren:'妻子/情人/女友/仆人/下属',wu:'钱财/食物/货物/商品/股票',ti:'肾/膀胱/血液'},
+  官鬼:{ren:'丈夫/男友/官员/上司/鬼神/小人',wu:'官职/功名/疾病/灾祸/压力',ti:'心脏/肺部/骨骼'}
+};
+
+function isSheng(a, b) { return WX_SHENG[a] === b; }
+function isKe(a, b) { return WX_KE[a] === b; }
+function isTong(a, b) { return a === b; }
+
+let yaoData = [];
+let fushenData = []; // 伏神数据
+
+function initYaoRows() {
+  const container = document.getElementById('yaoRows');
+  container.innerHTML = '';
+  yaoData = [];
+  for (let i = 0; i < 6; i++) {
+    yaoData.push({dizhi:'', liuqin:'', dong:false, bian:'', liushen:LIUSHEN[i]});
+    const div = document.createElement('div');
+    div.className = 'gua-grid';
+    div.innerHTML = `
+      <div class="row-label">${posNames[i]}</div>
+      <select id="dz${i}" onchange="onDizhiChange(${i})"><option value="">选择</option>${DIZHI.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+      <select id="lq${i}"><option value="">选择</option>${LIUQIN.map(l=>`<option value="${l}">${l}</option>`).join('')}</select>
+      <select id="ls${i}" onchange="onLiushenChange(${i})">${LIUSHEN.map((l,j)=>`<option value="${l}"${j===i?' selected':''}>${l}</option>`).join('')}</select>
+      <input type="checkbox" id="dong${i}" onchange="onDongChange(${i})" style="width:18px;height:18px;cursor:pointer;">
+      <select id="bian${i}" disabled><option value="">-</option>${DIZHI.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+    `;
+    container.appendChild(div);
+  }
+  // 初始化伏神输入
+  initFushenRows();
+}
+
+// 初始化伏神输入行
+function initFushenRows() {
+  const container = document.getElementById('fushenRows');
+  container.innerHTML = '';
+  fushenData = [];
+  for (let i = 0; i < 6; i++) {
+    fushenData.push({liuqin:'', dizhi:'', feishen:''});
+    const div = document.createElement('div');
+    div.className = 'fushen-row';
+    div.innerHTML = `
+      <div class="row-label">${posNames[i]}</div>
+      <select id="fuLq${i}" onchange="onFushenChange(${i})"><option value="">无</option>${LIUQIN.map(l=>`<option value="${l}">${l}</option>`).join('')}</select>
+      <select id="fuDz${i}" onchange="onFushenChange(${i})"><option value="">无</option>${DIZHI.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+      <div id="feishen${i}" style="font-size:0.65rem;color:#888;text-align:center;">-</div>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function onFushenChange(i) {
+  fushenData[i].liuqin = document.getElementById('fuLq'+i).value;
+  fushenData[i].dizhi = document.getElementById('fuDz'+i).value;
+  // 飞神 = 该爻位的地支
+  const feishen = yaoData[i] && yaoData[i].dizhi ? yaoData[i].dizhi : '-';
+  fushenData[i].feishen = feishen;
+  document.getElementById('feishen'+i).textContent = feishen;
+}
+
+function onDizhiChange(i) { yaoData[i].dizhi = document.getElementById('dz'+i).value; }
+function onLiushenChange(i) { yaoData[i].liushen = document.getElementById('ls'+i).value; }
+function onDongChange(i) {
+  yaoData[i].dong = document.getElementById('dong'+i).checked;
+  document.getElementById('bian'+i).disabled = !yaoData[i].dong;
+}
+
+function clearAll() {
+  initYaoRows();
+  document.getElementById('resultCard').classList.add('hidden');
+  document.getElementById('promptCard').classList.add('hidden');
+}
+
+function switchTab(name) {
+  const tabs = ['yongshen','liushen','liuqin','dongbian','score','fushen'];
+  tabs.forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    if (tabs[i] === name) b.classList.add('active'); else b.classList.remove('active');
+  });
+}
+
+function getXunkong() {
+  const xk = [];
+  for (let i = 0; i < 12; i++) { if (document.getElementById('xk'+i).checked) xk.push(DIZHI[i]); }
+  return xk;
+}
+
+function analyzeAll() {
+  const yue = document.getElementById('yuejian').value;
+  const ri = document.getElementById('richen').value;
+  if (!yue || !ri) { alert('请选择月建和日辰！'); return; }
+  for (let i = 0; i < 6; i++) {
+    if (!document.getElementById('dz'+i).value) { alert('第'+(i+1)+'爻地支未选！'); return; }
+    yaoData[i].dizhi = document.getElementById('dz'+i).value;
+    yaoData[i].liuqin = document.getElementById('lq'+i).value || '-';
+    yaoData[i].liushen = document.getElementById('ls'+i).value || LIUSHEN[i];
+    yaoData[i].bian = document.getElementById('bian'+i).value;
+    // 读取伏神数据
+    fushenData[i].liuqin = document.getElementById('fuLq'+i).value;
+    fushenData[i].dizhi = document.getElementById('fuDz'+i).value;
+    fushenData[i].feishen = yaoData[i].dizhi;
+  }
+  const xunkong = getXunkong();
+  const shiPos = parseInt(document.getElementById('shiYao').value) - 1;
+  const yingPos = parseInt(document.getElementById('yingYao').value) - 1;
+  const yueWx = DIZHI_WX[yue], riWx = DIZHI_WX[ri];
+  const results = [];
+  for (let i = 0; i < 6; i++) {
+    const yao = yaoData[i], dz = yao.dizhi, wx = DIZHI_WX[dz];
+    const r = {pos:i, dizhi:dz, liuqin:yao.liuqin, liushen:yao.liushen, dong:yao.dong, bian:yao.bian, score:0, tags:[], shi:i===shiPos, ying:i===yingPos, fushen:null};
+    
+    // 伏神处理
+    const fs = fushenData[i];
+    if (fs.liuqin && fs.dizhi) {
+      const fuWx = DIZHI_WX[fs.dizhi];
+      const feiWx = wx; // 飞神五行 = 本爻五行
+      r.fushen = {liuqin: fs.liuqin, dizhi: fs.dizhi, feishen: dz, fuWx: fuWx, feiWx: feiWx};
+      r.tags.push({t:'伏'+fs.liuqin, c:'tag-fushen'});
+      r.score -= 5; // 伏神基础扣分
+      
+      // 飞神生伏神 → 伏神有力
+      if (isSheng(feiWx, fuWx)) { r.tags.push({t:'飞生伏', c:'tag-sheng'}); r.score += 8; }
+      // 飞神克伏神 → 伏神无力
+      else if (isKe(feiWx, fuWx)) { r.tags.push({t:'飞克伏', c:'tag-ke'}); r.score -= 8; }
+      // 伏神克飞神 → 可出
+      else if (isKe(fuWx, feiWx)) { r.tags.push({t:'伏克飞', c:'tag-jintui'}); r.score += 5; }
+      // 伏神生飞神 → 泄气
+      else if (isSheng(fuWx, feiWx)) { r.tags.push({t:'伏生飞', c:'tag-ke'}); r.score -= 3; }
+      // 飞神旬空 → 伏神易出
+      if (xunkong.includes(dz)) { r.tags.push({t:'飞空伏出', c:'tag-sheng'}); r.score += 10; }
+    }
+    
+    if (xunkong.includes(dz)) { r.tags.push({t:'旬空',c:'tag-xunkong'}); r.score -= 10; }
+    if (CHONG[dz] === yue) { r.tags.push({t:'月破',c:'tag-yuepo'}); r.score -= 20; }
+    else if (CHONG[dz] === ri) { r.tags.push({t:'日破',c:'tag-rippo'}); r.score -= 25; }
+    if (!yao.dong && (CHONG[dz] === yue || CHONG[dz] === ri)) {
+      r.tags.push({t:'暗动',c:'tag-andong'}); r.score += CHONG[dz] === yue ? 15 : 10;
+    }
+    if (!yao.dong && HE[dz] === ri) r.tags.push({t:'日合',c:'tag-hechong'});
+    if (!yao.dong && HE[dz] === yue) r.tags.push({t:'月合',c:'tag-hechong'});
+    if (isSheng(yueWx, wx)) { r.tags.push({t:'月生',c:'tag-sheng'}); r.score += 10; }
+    else if (isKe(yueWx, wx)) { r.tags.push({t:'月克',c:'tag-ke'}); r.score -= 8; }
+    else if (isTong(yueWx, wx)) { r.tags.push({t:'旺相',c:'tag-sheng'}); r.score += 20; }
+    if (isSheng(riWx, wx)) { r.tags.push({t:'日生',c:'tag-sheng'}); r.score += 10; }
+    else if (isKe(riWx, wx)) { r.tags.push({t:'日克',c:'tag-ke'}); r.score -= 8; }
+    if (yao.dong && yao.bian) {
+      const bianWx = DIZHI_WX[yao.bian];
+      if (JINSHEN[dz] === yao.bian) { r.tags.push({t:'进神',c:'tag-jintui'}); r.score += 10; }
+      else if (TUISHEN[dz] === yao.bian) { r.tags.push({t:'退神',c:'tag-jintui'}); r.score -= 5; }
+      if (CHONG[dz] === yao.bian) { r.tags.push({t:'反吟',c:'tag-fanfu'}); r.score -= 15; }
+      else if (dz === yao.bian) { r.tags.push({t:'伏吟',c:'tag-fanfu'}); r.score -= 10; }
+      if (isSheng(bianWx, wx)) { r.tags.push({t:'回头生',c:'tag-huawang'}); r.score += 20; }
+      else if (isKe(bianWx, wx)) { r.tags.push({t:'回头克',c:'tag-ke'}); r.score -= 20; }
+      const yueSh = isSheng(yueWx, bianWx), riSh = isSheng(riWx, bianWx);
+      if (yueSh && riSh) { r.tags.push({t:'超级化旺',c:'tag-huawang'}); r.score += 30; }
+      else if (yueSh || riSh) { r.tags.push({t:'化旺',c:'tag-huawang'}); r.score += 15; }
+    }
+    results.push(r);
+  }
+  const allDz = results.map(r => r.dizhi);
+  SANHE_GROUPS.forEach(group => {
+    if (group.every(d => allDz.includes(d))) {
+      group.forEach(d => {
+        const idx = allDz.indexOf(d);
+        if (idx >= 0) { results[idx].tags.push({t:'三合局',c:'tag-sanhe'}); results[idx].score += 15; }
+      });
+    }
+  });
+  renderResults(results, yue, ri, xunkong, shiPos, yingPos);
+}
+
+function renderResults(results, yue, ri, xunkong, shiPos, yingPos) {
+  document.getElementById('resultCard').classList.remove('hidden');
+  let table = '<table class="score-table"><thead><tr><th>爻位</th><th>地支</th><th>六亲</th><th>六神</th><th>评分</th><th>标签</th></tr></thead><tbody>';
+  let totalScore = 0, shiScore = 0, yingScore = 0;
+  const sp = {yuePo:[], anDong:[], jinTui:[], huaWang:[], sanhe:[], dongYao:[], fanfu:[]};
+  results.forEach((r, i) => {
+    const sc = r.score >= 10 ? 'score-high' : r.score >= 0 ? 'score-mid' : 'score-low';
+    const sy = r.shi ? '<span class="tag" style="background:rgba(212,160,48,0.3);color:#d4a030;">世</span>' : r.ying ? '<span class="tag" style="background:rgba(52,152,219,0.3);color:#3498db;">应</span>' : '';
+    const tags = r.tags.map(t=>'<span class="tag '+t.c+'">'+t.t+'</span>').join('');
+    table += '<tr><td>'+posNames[i]+'</td><td style="color:#f39c12;font-weight:bold;">'+r.dizhi+(r.dong?'→'+(r.bian||'?'):'')+'</td><td>'+r.liuqin+'</td><td>'+r.liushen+'</td><td><span class="score-badge '+sc+'">'+(r.score>=0?'+':'')+r.score+'</span></td><td style="text-align:left;">'+sy+tags+'</td></tr>';
+    totalScore += r.score;
+    if (r.shi) shiScore = r.score;
+    if (r.ying) yingScore = r.score;
+    r.tags.forEach(t => {
+      if (t.t==='月破') sp.yuePo.push(posNames[i]);
+      if (t.t==='暗动') sp.anDong.push(posNames[i]);
+      if (t.t==='进神'||t.t==='退神') sp.jinTui.push(posNames[i]+'('+t.t+')');
+      if (t.t.includes('化旺')) sp.huaWang.push(posNames[i]+'('+t.t+')');
+      if (t.t==='三合局') sp.sanhe.push(posNames[i]);
+      if (t.t==='反吟'||t.t==='伏吟') sp.fanfu.push(posNames[i]+'('+t.t+')');
+    });
+    if (r.dong) sp.dongYao.push(posNames[i]);
+  });
+  table += '</tbody></table>';
+  document.getElementById('scoreTable').innerHTML = table;
+  const cls = totalScore >= 30 ? 'good' : totalScore >= 0 ? 'mid' : 'bad';
+  const judge = totalScore >= 50 ? '大吉' : totalScore >= 20 ? '吉' : totalScore >= 0 ? '平' : totalScore >= -20 ? '凶' : '大凶';
+  document.getElementById('scoreSummary').innerHTML = '<div class="score-total '+cls+'">综合评分：'+(totalScore>=0?'+':'')+totalScore+' 分 &nbsp;|&nbsp; 判断：<b>'+judge+'</b>&nbsp;|&nbsp; 世爻：'+(shiScore>=0?'+':'')+shiScore+' &nbsp;|&nbsp; 应爻：'+(yingScore>=0?'+':'')+yingScore+'</div>';
+  let th = '';
+  if (sp.yuePo.length) th += '<span class="tag tag-yuepo">月破：'+sp.yuePo.join('、')+'</span> ';
+  if (sp.anDong.length) th += '<span class="tag tag-andong">暗动：'+sp.anDong.join('、')+'</span> ';
+  if (sp.jinTui.length) th += '<span class="tag tag-jintui">进退神：'+sp.jinTui.join('、')+'</span> ';
+  if (sp.huaWang.length) th += '<span class="tag tag-huawang">化旺：'+sp.huaWang.join('、')+'</span> ';
+  if (sp.sanhe.length) th += '<span class="tag tag-sanhe">三合局：'+sp.sanhe.join('、')+'</span> ';
+  if (sp.fanfu.length) th += '<span class="tag tag-fanfu">反吟伏吟：'+sp.fanfu.join('、')+'</span> ';
+  if (sp.dongYao.length) th += '<span class="tag tag-andong">动爻：'+sp.dongYao.join('、')+'</span> ';
+  // 伏神汇总
+  const fushenList = results.filter(r => r.fushen).map(r => posNames[r.pos]+'伏'+r.fushen.liuqin+'('+r.fushen.dizhi+')');
+  if (fushenList.length) th += '<span class="tag tag-fushen">伏神：'+fushenList.join('、')+'</span> ';
+  document.getElementById('specialTags').innerHTML = th;
+  window._lastResults = {results, yue, ri, xunkong, shiPos, yingPos, sp, totalScore, shiScore, yingScore};
+}
+
+function generatePrompt() {
+  if (!window._lastResults) { alert('请先点击"开始分析"！'); return; }
+  const {results, yue, ri, xunkong, shiPos, yingPos, sp, totalScore, shiScore, yingScore} = window._lastResults;
+  const question = document.getElementById('question').value || '（未填写）';
+  const wenType = document.getElementById('wenType').value;
+  const yueWx = DIZHI_WX[yue], riWx = DIZHI_WX[ri];
+
+  const yongshenRules = {
+    '求财':'妻财为用神（财源），子孙为原神（财库），兄弟为忌神（劫财）',
+    '婚姻':'男：妻财为用神；女：官鬼为用神；应爻为对方',
+    '事业':'官鬼为用神，父母为原神（文书），子孙为忌神',
+    '学业':'父母为用神（文书/成绩），官鬼为原神（考官）',
+    '子女':'子孙为用神，妻财为原神（母体）',
+    '健康':'子孙为用神（医药），官鬼为忌神（病因）',
+    '官司':'官鬼为用神，世爻为自身，应爻为对方',
+    '合作':'妻财为用神，兄弟为忌神（破财）',
+    '投资':'妻财为用神，子孙为原神，兄弟为忌神',
+    '寻人':'子孙为用神，应爻为方向',
+    '求职':'官鬼为用神，父母为原神（文书）',
+    '房产':'父母为用神（房屋），妻财为原神（资金）',
+    '家宅':'父母为用神，子孙为原神',
+    '出行':'世爻为用神，应爻为目的地',
+  };
+  const yongshenRule = yongshenRules[wenType] || '根据问事类型确定用神';
+
+  // 构建六爻详注（含象意）
+  let yaoDetail = '';
+  results.forEach((r, i) => {
+    const tags = r.tags.map(t=>t.t).join('、');
+    const shiYing = r.shi ? '【世】' : r.ying ? '【应】' : '';
+    const dongStr = r.dong ? ('→变'+r.bian) : '';
+    const lqXiang = LIUQIN_XIANG[r.liuqin] || {};
+    const lsXiang = LIUSHEN_XIANG[r.liushen] || {};
+    const dzXiang = DIZHI_XIANG[r.dizhi] || '';
+    yaoDetail += posNames[i]+'：'+r.dizhi+dongStr+' '+r.liuqin+' '+r.liushen+shiYing+' 评分'+(r.score>=0?'+':'')+r.score;
+    if (tags) yaoDetail += ' ['+tags+']';
+    yaoDetail += '\n';
+    // 象意注释
+    if (lqXiang.ren) yaoDetail += '  └六亲象：人物('+lqXiang.ren+') 事物('+lqXiang.wu+') 身体('+lqXiang.ti+')\n';
+    if (lsXiang.ji) yaoDetail += '  └六神象：旺吉('+lsXiang.ji+') 衰凶('+lsXiang.xiong+')\n';
+    if (dzXiang) yaoDetail += '  └地支象：'+dzXiang+'\n';
+    // 伏神注释
+    if (r.fushen) {
+      const fuLqX = LIUQIN_XIANG[r.fushen.liuqin] || {};
+      const fuDzX = DIZHI_XIANG[r.fushen.dizhi] || '';
+      yaoDetail += '  └伏神：'+r.fushen.liuqin+'('+r.fushen.dizhi+') 飞神'+r.fushen.feishen;
+      if (r.fushen.feiWx && r.fushen.fuWx) {
+        if (isSheng(r.fushen.feiWx, r.fushen.fuWx)) yaoDetail += ' 飞生伏(有力)';
+        else if (isKe(r.fushen.feiWx, r.fushen.fuWx)) yaoDetail += ' 飞克伏(无力)';
+        else if (isKe(r.fushen.fuWx, r.fushen.feiWx)) yaoDetail += ' 伏克飞(可出)';
+        else if (isSheng(r.fushen.fuWx, r.fushen.feiWx)) yaoDetail += ' 伏生飞(泄气)';
+      }
+      yaoDetail += '\n';
+    }
+  });
+
+  // 世应爻象意
+  const shiYao = results[shiPos], yingYao = results[yingPos];
+  const shiLqX = LIUQIN_XIANG[shiYao.liuqin] || {};
+  const yingLqX = LIUQIN_XIANG[yingYao.liuqin] || {};
+
+  // 问事专项取象
+  const wenTypeXiang = {
+    '求财': `**求财专项取象：**
+- 妻财（用神）：${LIUQIN_XIANG['妻财'].wu}
+- 子孙（原神/财库）：${LIUQIN_XIANG['子孙'].wu}
+- 兄弟（忌神/劫财）：${LIUQIN_XIANG['兄弟'].wu}
+- 妻财临青龙 → 正财、光明正大的收入
+- 妻财临玄武 → 偏财、暗中收入、赌博之财
+- 妻财临白虎 → 破财、医疗费用
+- 妻财临朱雀 → 文书财、合同款项`,
+    '婚姻': `**婚姻专项取象：**
+- 男问妻财（用神）：${LIUQIN_XIANG['妻财'].ren}
+- 女问官鬼（用神）：${LIUQIN_XIANG['官鬼'].ren}
+- 应爻为对方心意
+- 父母为婚书、媒人
+- 子孙为子女、欢乐
+- 用神临青龙 → 对方正直、帅气/漂亮
+- 用神临玄武 → 对方暧昧、有隐情
+- 用神临白虎 → 对方强势、有暴力倾向`,
+    '健康': `**健康专项取象：**
+- 官鬼（病神）：${LIUQIN_XIANG['官鬼'].wu}
+- 子孙（医药）：${LIUQIN_XIANG['子孙'].wu}
+- 官鬼临金 → 骨骼、肺部、皮肤疾病
+- 官鬼临木 → 肝胆、神经、筋骨疾病
+- 官鬼临火 → 心脏、血液、炎症、发烧
+- 官鬼临水 → 肾、膀胱、泌尿系统疾病
+- 官鬼临土 → 脾胃、肿瘤、消化系统
+- 官鬼临螣蛇 → 精神疾病、怪病
+- 官鬼临白虎 → 手术、外伤、血光`,
+    '事业': `**事业专项取象：**
+- 官鬼（用神）：${LIUQIN_XIANG['官鬼'].wu}
+- 父母（原神）：${LIUQIN_XIANG['父母'].wu}
+- 官鬼临青龙 → 正当官职、升迁有望
+- 官鬼临玄武 → 暗中运作、灰色地带
+- 官鬼临白虎 → 武职、公检法、军队
+- 官鬼临朱雀 → 文职、媒体、教育`,
+  };
+
+  const prompt = `# 周易六爻断卦AI深度分析请求
+## ——青岚六爻·象数法完整版——
+
+══════════════════════════════════════════════════════════
+
+## 一、基本信息
+
+| 项目 | 内容 |
+|------|------|
+| 月建 | ${yue}月（${yueWx}旺，${yueWx}五行当令） |
+| 日辰 | ${ri}日（${riWx}） |
+| 旬空 | ${xunkong.length ? xunkong.join('、') : '无'} |
+| 世爻 | 第${shiPos+1}爻 ${posNames[shiPos]}（${shiYao.dizhi} ${shiYao.liuqin} ${shiYao.liushen}） |
+| 应爻 | 第${yingPos+1}爻 ${posNames[yingPos]}（${yingYao.dizhi} ${yingYao.liuqin} ${yingYao.liushen}） |
+| 问事 | ${question} |
+| 类型 | ${wenType || '一般占问'} |
+
+══════════════════════════════════════════════════════════
+
+## 二、六爻盘面详注（含象意）
+
+${yaoDetail}
+══════════════════════════════════════════════════════════
+
+## 三、综合评分
+
+**总评分：** ${totalScore >= 0 ? '+' : ''}${totalScore} 分（${totalScore >= 50 ? '大吉' : totalScore >= 20 ? '吉' : totalScore >= 0 ? '平' : totalScore >= -20 ? '凶' : '大凶'}）
+**世爻：** ${shiScore >= 0 ? '+' : ''}${shiScore} 分 | **应爻：** ${yingScore >= 0 ? '+' : ''}${yingScore} 分
+
+══════════════════════════════════════════════════════════
+
+## 四、特殊格局
+
+${sp.yuePo.length ? '**月破：** '+sp.yuePo.join('、')+'（休囚无力，逢填实年应事）' : '**月破：** 无'}
+${sp.anDong.length ? '**暗动：** '+sp.anDong.join('、')+'（有力，事将发生）' : '**暗动：** 无'}
+${sp.jinTui.length ? '**进退神：** '+sp.jinTui.join('、') : '**进退神：** 无'}
+${sp.huaWang.length ? '**化旺：** '+sp.huaWang.join('、') : '**化旺：** 无'}
+${sp.sanhe.length ? '**三合局：** '+sp.sanhe.join('、')+'（成局力量巨大）' : '**三合局：** 无'}
+${sp.fanfu.length ? '**反吟伏吟：** '+sp.fanfu.join('、') : '**反吟伏吟：** 无'}
+${sp.dongYao.length ? '**动爻：** '+sp.dongYao.join('、') : '**动爻：** 无（静卦）'}
+
+══════════════════════════════════════════════════════════
+
+## 五、用神分析
+
+**推荐用神：** ${yongshenRule}
+
+**用神旺衰判断要点：**
+1. 月建（${yue}/${yueWx}）对用神的生克关系？
+2. 日辰（${ri}/${riWx}）对用神的生克关系？
+3. 原神是否旺相发动？
+4. 忌神是否旺相克制用神？
+5. 用神是否旬空/月破/日破/暗动？
+
+══════════════════════════════════════════════════════════
+
+## 六、六亲取象（象法核心）
+
+| 六亲 | 人物象 | 事物象 | 身体象 |
+|------|--------|--------|--------|
+| 父母 | 父母/长辈/上司/老师/房东 | 房屋/车辆/文书/合同/证件/衣物 | 头部/皮肤/肺部 |
+| 兄弟 | 兄弟姐妹/同事/朋友/竞争者 | 花费/损失/破财/争夺/阻碍 | 手足/筋骨/肝胆 |
+| 子孙 | 子女/晚辈/医生/僧道/宠物 | 喜悦/平安/医药/福气/享乐 | 腹部/肠胃/生殖 |
+| 妻财 | 妻子/情人/女友/仆人/下属 | 钱财/食物/货物/商品/股票 | 肾/膀胱/血液 |
+| 官鬼 | 丈夫/男友/官员/上司/鬼神 | 官职/功名/疾病/灾祸/压力 | 心脏/肺部/骨骼 |
+
+**世爻（${posNames[shiPos]}）象意：**
+- 六亲：${shiYao.liuqin}（${shiLqX.ren || ''}）
+- 六神：${shiYao.liushen}（${(LIUSHEN_XIANG[shiYao.liushen]||{}).ji || ''}）
+- 地支：${shiYao.dizhi}（${DIZHI_XIANG[shiYao.dizhi] || ''}）
+
+**应爻（${posNames[yingPos]}）象意：**
+- 六亲：${yingYao.liuqin}（${yingLqX.ren || ''}）
+- 六神：${yingYao.liushen}（${(LIUSHEN_XIANG[yingYao.liushen]||{}).ji || ''}）
+- 地支：${yingYao.dizhi}（${DIZHI_XIANG[yingYao.dizhi] || ''}）
+
+══════════════════════════════════════════════════════════
+
+## 七、六神取象（象法核心）
+
+| 六神 | 属行 | 旺相（吉） | 衰败（凶） |
+|------|------|------------|------------|
+| 青龙 | 木 | 正义/忠诚/喜庆/福禄/饮食/帅气 | 嗜酒/好色/清高/孤僻 |
+| 朱雀 | 火 | 文书/口才/信息/甜言蜜语 | 口舌/官司/火灾/发炎 |
+| 勾陈 | 土 | 诚实/稳重/田土/房产/熟人 | 愚笨/迟缓/肿瘤/牢狱 |
+| 螣蛇 | 土 | 灵活/思维/技艺/艺术 | 惊吓/怪异/噩梦/阴灵 |
+| 白虎 | 金 | 威猛/果断/魄力/军人 | 血光/疾病/死亡/丧事 |
+| 玄武 | 水 | 聪明/智慧/城府/内向 | 盗贼/淫乱/赌博/欺骗 |
+
+**六神动爻象意：**
+- 青龙动：喜事临门、贵人相助、婚姻有望
+- 朱雀动：口舌是非、文书往来、消息传来
+- 勾陈动：事情拖延、纠纷缠绕、田土争议
+- 螣蛇动：惊恐不安、怪事发生、梦境异常
+- 白虎动：血光之灾、疾病手术、意外伤害
+- 玄武动：暗中谋划、偷盗欺骗、桃色纠纷
+
+**六神+六亲组合象意：**
+- 青龙+官鬼：正当官职、合法权利
+- 朱雀+官鬼：诉讼官非、火灾之灾
+- 勾陈+官鬼：已被羁押、牢狱之灾
+- 螣蛇+官鬼：鬼附身、精神异常
+- 白虎+官鬼：血光之灾、手术伤病
+- 玄武+官鬼：盗贼陷害、桃色灾祸
+- 青龙+妻财：正财、光明正大的收入
+- 玄武+妻财：偏财、暗中收入
+- 白虎+妻财：破财、医疗费用
+
+══════════════════════════════════════════════════════════
+
+## 八、地支取象
+
+| 地支 | 五行 | 主要象意 |
+|------|------|----------|
+| 子 | 水 | 盗贼/智慧/河流/厕所/鼠 |
+| 丑 | 土 | 牛/仓库/牢狱/贤内助/桥梁 |
+| 寅 | 木 | 老虎/树木/官员/丈夫/公公 |
+| 卯 | 木 | 兔/花草/盗贼/文书/手足 |
+| 辰 | 土 | 龙/寺庙/水库/坟墓/医生 |
+| 巳 | 火 | 蛇/店铺/红色/道路/炉灶 |
+| 午 | 火 | 马/兵马/光天化日/发热 |
+| 未 | 土 | 羊/花园/酒食/宴会/孝服 |
+| 申 | 金 | 猴/刀剑/军队/道路/医生 |
+| 酉 | 金 | 鸡/金属/首饰/少女/酒 |
+| 戌 | 土 | 狗/坟墓/寺庙/岗哨/忠实 |
+| 亥 | 水 | 猪/厕所/智慧/玄学/盗贼 |
+
+══════════════════════════════════════════════════════════
+
+## 九、${wenType ? wenType+'专项取象' : '问事取象'}
+
+${wenTypeXiang[wenType] || '请根据问事类型，结合用神六亲进行象意分析：\n- 用神临何六亲？该六亲的人物/事物/身体象意？\n- 用神临何六神？旺相还是衰败？\n- 动爻临何六神？动爻的象意是什么？'}
+
+══════════════════════════════════════════════════════════
+
+## 十、动变分析框架
+
+| 变爻状态 | 象意 | 评分 |
+|----------|------|------|
+| 回头生 | 变爻生动爻，有根有源，大吉 | +20 |
+| 回头克 | 变爻克动爻，事态逆转，大凶 | -20 |
+| 进神 | 寅→卯/申→酉，前进发展 | +10 |
+| 退神 | 卯→寅/酉→申，后退衰落 | -5 |
+| 反吟 | 动变相冲，反复不稳 | -15 |
+| 伏吟 | 动变相同，痛苦停滞 | -10 |
+| 化旺 | 变爻被日月生，力量增强 | +15 |
+| 超级化旺 | 变爻临月建日辰，最强 | +30 |
+
+══════════════════════════════════════════════════════════
+
+## 十一、请按以下步骤深度分析
+
+**步骤一：确定用神**
+${yongshenRule}
+
+**步骤二：用神旺衰**（月建${yue}/${yueWx}，日辰${ri}/${riWx}）
+- 用神得月建生/克/同？得日辰生/克/同？
+- 原神是否旺相发动？忌神是否旺相克制？
+
+**步骤三：六亲取象**
+- 用神临何六亲？该六亲的人物/事物/身体象意？
+- 原神/忌神临何六亲？象意如何？
+
+**步骤四：六神取象**
+- 用神临何六神？旺相还是衰败？象意如何？
+- 动爻临何六神？动爻的六神象意？
+
+**步骤五：地支取象**
+- 用神所在地支的象意？
+- 地支合冲关系的象意？
+
+**步骤六：动变分析**
+- 动爻对用神是生是克？
+- 变爻对动爻是回头生/克/合？
+
+**步骤七：伏神分析**
+${(() => {
+  const fsList = results.filter(r => r.fushen);
+  if (fsList.length === 0) return '- 本卦无伏神';
+  return fsList.map(r => {
+    const fs = r.fushen;
+    return '- '+posNames[r.pos]+'伏'+fs.liuqin+'('+fs.dizhi+')，飞神'+fs.feishen;
+  }).join('\n');
+})()}
+
+**步骤八：综合断语**
+1. **明确吉凶**（大吉/吉/平/凶/大凶）
+2. **发展趋势**（详细描述）
+3. **时间应期**（年/月/日）
+4. **象意总结**（六亲+六神+地支综合象意）
+5. **趋避建议**（如何趋吉避凶）
+
+══════════════════════════════════════════════════════════
+
+**请以传统六爻预测专家身份，参考青岚《六爻基础入门》《六爻理法进阶》《六爻象法进阶》《六亲万事类象》，进行象数法深度分析，讲清卦理，引经据典，给出实用的象意解读和趋避建议。**`;
+
+  document.getElementById('promptContent').textContent = prompt;
+  document.getElementById('promptCard').classList.remove('hidden');
+  document.getElementById('promptCard').scrollIntoView({behavior:'smooth'});
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptContent').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('已复制到剪贴板！'));
+}
+
+initYaoRows();
+// Standalone mode - no service worker
+</script>
+</body>
+</html>

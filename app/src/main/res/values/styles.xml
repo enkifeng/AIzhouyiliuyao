@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主题色对应 #0d1b2a 深蓝背景，#d4a030 金色强调 -->
+    <style name="AppTheme" parent="android:Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">#0d1b2a</item>
+        <item name="android:colorPrimary">#d4a030</item>
+        <item name="android:colorPrimaryDark">#0d1b2a</item>
+        <item name="android:colorAccent">#d4a030</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+</resources>
