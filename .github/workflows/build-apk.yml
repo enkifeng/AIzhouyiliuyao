@@ -41,7 +41,13 @@ jobs:
         run: |
           sed -i 's/\r//' gradlew
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
+          ./gradlew assembleDebug --no-daemon --info 2>&1
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      - name: 查找生成的 APK
+        if: always()
+        run: find . -name "*.apk" 2>/dev/null || echo "未找到任何APK文件"
 
       - name: 上传 APK
         uses: actions/upload-artifact@v4
